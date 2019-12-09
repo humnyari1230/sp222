@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="score">
+	<insert id="insertScore" parameterType="com.sp.score.Score">
+		INSERT INTO score(hak, name, birth, kor, eng, mat) VALUES (#{hak}, #{name},
+		#{birth}, #{kor}, #{eng}, #{mat})
+	</insert>
+	
+	<!-- sql : 반복적인 쿼리를 작성할 때 효율적이다. -->
+	<sql id="where-list">
+		<if test="condition=='hak' ">
+			hak=#{keyword}
+		</if>
+		<if test="condition=='name' ">
+			INSTR(name, #{keyword}) &gt;=1
+		</if>
+		<if test="condition=='birth' ">
+			(TO_CHAR(birth, 'yyyy-mm-dd') = #{keyword} or
+			to_char(birth, 'yyyymmdd')= #{keyword})
+		</if>
+	</sql>
+	
+	<select id="dataCount" parameterType="map" resultType="Integer">
+		select nvl(count(*), 0) from score
+		<where>
+			<if test="keyword != null and keyword != '' ">
+				<include refid="where-list"/>
+			</if>
+		</where>
+	</select>
+	
+	<select id="listScore" parameterType="map" resultType="com.sp.score.Score">
+		select hak, name, to_char(birth, 'yyyy-mm-dd') birth, kor, eng, mat, kor+eng+mat tot,
+				(kor+eng+mat)/3 ave from score
+		<where>
+			<if test="keyword != null and keyword != '' ">
+				<include refid="where-list"/>
+			</if>
+		</where>
+		order by hak asc
+		offset #{offset} rows fetch first #{rows} rows only
+	</select>
+	
+	<select id="readScore" parameterType="String" resultType="com.sp.score.Score">
+		select hak, name, to_char(birth, 'yyyy-mm-dd') birth, kor, eng, mat
+		from score 
+		where hak = #{hak}
+	</select>
+	
+	<update id="updateScore" parameterType="com.sp.score.Score">
+		update score set hak=#{hak}, name=#{name}, birth=#{birth}, kor=#{kor}, eng=#{eng}, mat=#{mat}
+		where hak = #{phak} 
+	</update>
+	
+	<delete id="deleteScore" parameterType="String">
+		delete from score where hak= #{hak}
+	</delete>
+	
+	<delete id="deleteScoreList" parameterType="java.util.List">
+		delete from score where
+		hak in
+		<foreach item="hak" collection="list" open="(" separator="," close=")">
+			#{hak}
+		</foreach>
+	</delete>
+	
+	
+</mapper>
